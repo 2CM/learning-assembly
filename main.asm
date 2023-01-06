@@ -42,7 +42,7 @@ section .data
 section .text
 	;exits from the program
 	exit: 
-        ; ExitProcess(0)
+        ;ExitProcess(0)
         push    dword 0
         call    _ExitProcess
 
@@ -95,13 +95,13 @@ section .text
 		call 	printf
 
 
-		; handle = GetStdHandle(-10)
+		;handle = GetStdHandle(-10)
 		push    -10
         call    _GetStdHandle
         mov     [handle], eax
 
 
-		;fef = ReadConsole(handle, &inputBuffer, 32, charsRead, NULL)
+		;ReadConsole(handle, &inputBuffer, 32, charsRead, NULL)
 		push 	0
 		push 	charsRead
 		push 	32

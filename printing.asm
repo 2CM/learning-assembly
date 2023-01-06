@@ -28,12 +28,12 @@ section .text
 		push	eax
 		push 	ebx
 
-		; handle = GetStdHandle(-11)
+		;handle = GetStdHandle(-11)
 		push    -11
         call    _GetStdHandle
         mov     [handle], eax
 
-		; WriteConsole(handle, &msg[0], length, &written, 0)
+		;WriteConsole(handle, &msg[0], length, &written, 0)
         push    0
         push    written				;chars written
 		push 	edx 				;length
