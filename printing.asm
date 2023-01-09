@@ -317,7 +317,7 @@ section .text
 			break2:
 
 
-		mov		edx, ebx
+		mov		eax, ebx
 
 		;delete currentChar
 		pop		ebx
@@ -348,10 +348,10 @@ section .text
 
 
 		;int stringLength = strlen(&str);
-			;edx = strlen(&str);
+			;eax = strlen(&str);
 			push    dword [esp+16+8+4]		;16 for register preservation, 8 for local variables, 4 for arg location
 			call    strlen
-			push 	edx
+			push 	eax
 
 
 		;char currentChar = 'x';
@@ -426,10 +426,11 @@ section .text
 					push 	ebx
 					push 	ecx
 					
-					;edx = strlen(&ecx)
+					;eax = strlen(&ecx)
 					push	dword ecx
 					call 	strlen
 
+					mov 	edx, eax
 					pop 	ecx
 					call	print
 
