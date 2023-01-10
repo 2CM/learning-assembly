@@ -1,10 +1,17 @@
+;this file contains things related to printing and the console
+
 global handle
+global strprintf
+global intprintf
+global charprintf
 
 global print
 global printLineBreak
 global printDigit
 global printInt
 global printf
+global isNumber
+global stof
 
 
 extern  _GetStdHandle
@@ -16,6 +23,16 @@ section .data
 	temp: dd 0                          ;(int) temporary number for printInt
 	numberPrintIterations: db 0         ;(char) iterations of printing a number
 	numberPrintArr: times 10 db 0       ;(char[10]) array of bytes containing a string of numbers (0x0-BASE)
+
+	;stof stuff
+	stofIntPart: times 16 db 0
+	stofFracPart: times 16 db 0
+	stofDebugMessage: db "%c%s.%s", 0xa, 0
+
+	;definitions for printf
+	strprintf: db "%s", 0
+	intprintf: db "%i", 0
+	charprintf: db "%c", 0
 
 	;printing stuff
 	handle: db 0
@@ -455,10 +472,19 @@ section .text
 
 				else10:
 
-				;percent
-				if11:
-					cmp		byte [esp+0], "%"	;currentChar
+				if11:	;if(currentChar == 'f')
+					cmp		byte [esp+0], "f"	;currentChar
 					jne		else11
+
+
+					;floating point printing here
+
+				else11:
+
+				;percent
+				if12:
+					cmp		byte [esp+0], "%"	;currentChar
+					jne		else12
 
 					push 	"%"
 					
@@ -471,7 +497,7 @@ section .text
 					;this one doesnt depend on an arg, so just undo it
 					sub		dword [esp+12], 4 	;currentInputArgLocation
 
-				else11:
+				else12:
 
 
 				;primedForType = false;
@@ -528,4 +554,323 @@ section .text
 
 		;TODO: delete args
 
-        ret 	4
+        ret 
+
+	;bool isNumber(char input)
+	isNumber:
+		mov 	eax, 0
+
+		if14:	;if(input >= 48)
+			cmp		byte [esp+4], 48	;input
+			jl		else14
+
+			if15:	;if(input <= 57)
+				cmp		byte [esp+4], 57	;input
+				jg		else15
+
+				mov 	eax, 1
+
+			else15:
+
+		else14:
+
+		ret 	4
+	
+	;int charToNum(char input)
+	charToNum:
+		xor		eax, eax
+		mov 	al, [esp+4]
+		sub 	eax, "0"
+
+		ret 	4
+
+	;implimentation of the libc stof function (string to float)
+	;float stof(char* str)
+	stof:
+		;preserving registers
+		push 	eax
+		push 	ebx
+		push 	ecx
+		push 	edx
+		
+		;bool isNegative = false;
+			push 	0
+		
+		;int pointLocation = 127
+			push 127
+		
+		;int numbersStart = 0;
+			push 0
+		
+		;int placeValue = 1;
+			push 1
+
+		;char currentChar = str[0]
+			mov		eax, [esp+16+16+4]	;16 for register preservation, 16 for local variables, 4 for arg location
+			push 	dword [eax]
+
+
+		if16:	;if(currentChar == '+')
+			cmp		byte [esp+0], "+"	;currentChar
+			jne		else16
+
+			mov 	dword [esp+8], 1	;numbersStart
+
+		else16:
+
+		if17:	;if(currentChar == '-')
+			cmp		byte [esp+0], "-"	;currentChar
+			jne		else17
+
+			mov 	dword [esp+8], 1	;numbersStart
+
+			mov		dword [esp+16], 1	;isNegative
+
+		else17:
+
+		;this loop splits the string into stofIntPart and stofFracPart
+		
+		;i = numbersStart
+		mov 	ebx, [esp+8]	;numberStart
+
+		loop4:
+            ;currentChar = str[ebx];
+            mov     ecx, [esp+16+20+4]	;16 for register preservation, 20 for local variables, 4 for arg location
+            add     ecx, ebx
+			mov		ecx, [ecx]
+            mov     [esp+0], ecx		;currentChar
+
+			if18:	;if(currentChar == '.')
+				cmp		byte [esp+0], "."	;currentChar
+				jne		else18
+
+				if19:	;if(pointLocation == 127)
+					cmp		dword [esp+12], 127	;pointLocation
+					jne		else19
+
+					mov		[esp+12], ebx
+
+					jmp 	continue4
+
+				else19:
+
+			else18:
+
+			;eax = isNumber(currentChar);
+			push	dword [esp+0]		;currentChar
+			call	isNumber
+
+			if20:	;if(eax == 0)
+				cmp		eax, 0
+				jne		else20
+
+				;break;
+				jmp 	break4
+
+			else20:
+
+			if21:	;if(pointLocation > i)
+				cmp 	ebx, [esp+12]		;pointLocation
+				jle 	else21
+
+				;fracPart[i-pointLocation-1] = currentChar;
+				mov 	ecx, stofFracPart
+				add 	ecx, ebx
+				sub 	ecx, [esp+12]		;pointLocation
+				sub 	ecx, 1
+				mov		edx, dword [esp+0]	;currentChar
+				mov		[ecx], dl
+
+			else21:
+
+			if22:	;if(pointLocation <= i)
+				cmp 	ebx, [esp+12]		;pointLocation
+				jg 		else22
+
+				;intPart[i-numbersStart] = currentChar;
+				mov 	ecx, stofIntPart
+				add 	ecx, ebx
+				sub 	ecx, [esp+8]		;numbersStart
+				mov		edx, dword [esp+0]	;currentChar
+				mov		[ecx], dl
+
+			else22:
+
+            continue4:
+                ; i++;
+				inc 	ebx
+				
+				; if(i < 32) loop();
+				cmp 	ebx, 32
+				jl		loop4
+
+			break4:
+
+
+		;float evaluated = 0;
+		push 	0
+		fild 	dword [esp+0]
+		pop 	eax
+
+		;integer part evaluation
+
+		;i = 15
+		mov 	ebx, 15
+		
+		loop5:
+			;currentChar = stofIntPart[ebx];
+            mov     ecx, stofIntPart		;stofIntPart
+            add     ecx, ebx
+			mov		ecx, [ecx]
+            mov     [esp+0], ecx		;currentChar
+
+			if23:	;if(currentChar == 0)
+				cmp		byte [esp+0], 0	;currentChar
+				jne		else23
+
+				;continue;
+				jmp		continue5
+
+			else23:
+
+			;eax = charToNum(currentChar)
+			push	dword [esp+0] 	;currentChar
+			call	charToNum
+
+			;eax = eax*placeValue
+			mul		dword [esp+4]
+
+			;evaluated += eax;
+				push 	eax
+				fild	dword [esp+0]
+				pop 	eax
+
+				;by here st1 = evaluated
+				;        st0 = eax
+
+				;evaluated += eax
+				faddp	st1, st0
+
+			;placeValue *= 10
+        	mov		eax, [esp+4]	;placeValue
+			mov		ecx, 10
+			mul		ecx
+			mov		[esp+4], eax	;placeValue
+
+
+            continue5:
+                ; i--;
+				dec 	ebx
+
+				; if(i > 0) loop();
+				cmp 	ebx, 0
+				jge		loop5
+
+
+
+		;fractional part evaluation
+
+		;placeValue = 10
+		mov		dword [esp+4], 10
+
+		;i = 0;
+		mov 	ebx, 0
+
+		loop6:
+			;currentChar = stofIntPart[ebx];
+            mov     ecx, stofFracPart
+            add     ecx, ebx
+			mov		ecx, [ecx]
+            mov     [esp+0], ecx		;currentChar
+
+			if24:	;if(currentChar == 0)
+				cmp		byte [esp+0], 0	;currentChar
+				jne		else24
+
+				;continue;
+				jmp		continue6
+
+			else24:
+
+			;eax = charToNum(currentChar)
+			push	dword [esp+0] 	;currentChar
+			call	charToNum
+
+			;evaluated += charToNum(currentChar)/placeValue;
+
+			;load placeValue
+			fild 	dword [esp+4]	;placeValue
+
+			;load charToNum(currentChar)
+			push	eax
+			fild	dword [esp+0]   ;charToNum(currentChar)
+			pop 	eax
+
+			; by here, 
+			; st2 = evaluated
+			; st1 = placeValue
+			; st0 = charToNum(currentChar)
+
+			;do the stuff
+
+			; st2 += st0 / st1
+			fdiv	st0, st1
+			faddp 	st2, st0
+			
+			;fdivp didnt work so i have to do this
+			push 	0
+			fstp	dword [esp+0]
+			pop 	eax
+
+			;placeValue *= 10
+        	mov		eax, [esp+4]	;placeValue
+			mov		ecx, 10
+			mul		ecx
+			mov		[esp+4], eax	;placeValue
+			
+            continue6:
+                ; i++;
+				inc 	ebx
+
+				; if(i < 16) loop();
+				cmp 	ebx, 16
+				jl		loop6
+
+
+		;sign
+		if25:	;if(isNegative == true)
+			cmp 	byte [esp+16], 1
+			jne		else25
+
+			;flip sign of st0
+			fchs
+		else25:
+
+
+		;delete currentChar
+		pop 	eax
+
+		;delete placeValue
+		pop 	eax
+
+		;delete numbersStart
+		pop 	eax
+
+		;delete pointLocation
+		pop 	eax
+
+		;delete isNegative
+		pop 	eax
+
+		;register preservation
+		pop 	edx
+		pop 	ecx
+		pop 	ebx
+		pop 	eax
+
+		;store evaluated into eax
+		push 	0
+		fstp	dword [esp+0]
+		pop		eax
+
+		ret 	4
