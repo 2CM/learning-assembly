@@ -4,6 +4,7 @@ global handle
 global strprintf
 global intprintf
 global charprintf
+global floatprintf
 
 global print
 global printLineBreak
@@ -12,6 +13,9 @@ global printInt
 global printf
 global isNumber
 global stof
+global floorFloat
+global printFloatFrac
+global fracFloat
 
 
 extern  _GetStdHandle
@@ -33,6 +37,7 @@ section .data
 	strprintf: db "%s", 0
 	intprintf: db "%i", 0
 	charprintf: db "%c", 0
+	floatprintf: db "%f", 0
 
 	;printing stuff
 	handle: db 0
@@ -297,6 +302,123 @@ section .text
 
 		ret
 
+	;floors the float stored in st0
+	floorFloat:
+		;register preservation
+		push 	eax
+
+		;int floored = 0;
+		push	0
+
+		;float half (st0) = 0.499999999;  //0.5 exactly would cause errors (int)(0.5) = 1 because it rounds up for 0.5
+		push	0x3effffff
+		fld		dword [esp+0] 	
+		pop		eax
+
+		;by here, st0 = 0.5; st1 = input;
+
+		fsubp	st1				;st0 = st1 - st0; delete st1;
+		fistp	dword [esp+0]	;floored = (int)input; delete st0
+		fild	dword [esp+0]	;st0 = (float)floored;
+		pop		eax				;delete floored;
+
+		;register preservation
+		pop		eax
+
+		ret
+
+	;strips the integer part from the float in st0
+	fracFloat:
+		;register preservation
+		push	eax
+
+		
+		;clones st0 into st0 and st1
+		push	0
+		fst		dword [esp+0]
+		fld		dword [esp+0]
+		pop		eax
+
+		;st0 = Math.floor(st0);
+		call	floorFloat
+
+		fsubp	st1
+
+		;register preservation
+		pop		eax
+
+		ret
+
+	;prints the 0-1 single precision floating point number stored in ecx
+	printFloatFrac:
+		;register preservation
+		push 	eax
+		push	ebx
+
+		;int intTemp = 0;
+		push	0
+
+		; float temp = ecx;
+		push	ecx
+		fld		dword [esp+0]
+		pop		eax
+
+		;i=0;
+		mov		ebx, 0
+
+		loop7:
+			;temp *= 10;
+			push	10				;int ten = 10;
+			fild	dword [esp+0]	;float floatTen = 10; (st0 = 10; st1 = temp)
+			pop 	eax				;delete ten;
+			fmulp	st1				;temp *= floatTen; delete floatTen;
+
+
+			;int originalTemp = temp; //its a float but float definitions use fpu stuff so imma store this as an int
+			push	0
+			fst		dword [esp+0]
+
+
+			;temp = Math.floor(temp);
+			call	floorFloat
+
+			;intTemp = (int)temp; delete temp;
+			fistp	dword [esp+4]
+
+			;float temp = (float)originalTemp; delete originalTemp;
+			fld		dword [esp+0]
+			pop		eax
+
+
+			;printDigit(intTemp);
+			mov		ecx, [esp+0]	;intTemp
+			call	printDigit
+
+
+			;temp -= intTemp;
+			fild	dword [esp+0]	;float floatIntTemp = intTemp; (st0 = intTemp; st1 = temp)
+			fsubp	st1				;temp -= floatIntTemp; delete floatIntTemp
+			
+
+			continue7:
+				;i++;
+				inc 	ebx
+
+				;if(i < 16) loop();
+				cmp		ebx, 16
+				jl		loop7
+
+		fstp	dword [esp+0]
+
+		;delete intTemp
+		pop		eax
+
+		;register preservation
+		pop		ebx
+		pop 	eax
+
+		ret
+
 	;strlen(char* str)
     strlen:
 		;register preservation
@@ -476,9 +598,50 @@ section .text
 					cmp		byte [esp+0], "f"	;currentChar
 					jne		else11
 
+					mov		ecx, esp
+					add		ecx, 16			;preserving registers
+					add		ecx, 16			;local variables
+					add		ecx, [esp+12]	;currentInputArgLocation
+					mov		ecx, [ecx]
 
-					;floating point printing here
+					;int num = ecx; //its actually a float but floats do fpu stuff
+					push	ecx
 
+					;integer part
+						;int intPart = 0;
+						push	0
+
+						fld		dword [esp+4]	;st0 = num;
+						call	floorFloat		;st0 = Math.floor(st0);
+						fistp	dword [esp+0]	;intPart = (int)st0; delete st0;
+
+						pop		ecx				;ecx = intPart; delete intPart;
+						mov		edx, 10			;base
+						call	printInt		;print
+
+
+					;the dot part
+						push	"."
+						mov		ecx, esp
+						mov		edx, 1
+						call	print
+						pop		edx
+
+
+					;fractional part
+						fld		dword [esp+0]	;st0 = num;
+
+						call	fracFloat		;st0 = st0 - Math.floor(st0);
+
+						;ecx = st0; delete st0;
+						push	0
+						fstp	dword [esp+0]
+						pop		ecx
+
+						call	printFloatFrac
+					
+					;delete num;
+					pop		edx
 				else11:
 
 				;percent
