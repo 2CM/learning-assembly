@@ -135,13 +135,13 @@ struct LinkedListNode {
 struct LinkedList {
     LinkedListNode* first;
     LinkedListNode* last;
-    int length;
+    int32_t length;
 };
 
-LinkedListNode* LinkedListGetNode(LinkedList* list, int index) {
+LinkedListNode* LinkedListGetNode(LinkedList* list, int32_t index) {
     LinkedListNode* ptr = list->first;
 
-    for(int i = 0; i < index; i++) {
+    for(int32_t i = 0; i < index; i++) {
         // std::cout << ptr->data << std::endl;
 
         if(ptr == nullptr) return nullptr;
@@ -152,7 +152,7 @@ LinkedListNode* LinkedListGetNode(LinkedList* list, int index) {
     return ptr;
 }
 
-int32_t LinkedListGetValue(LinkedList* list, int index) {
+int32_t LinkedListGetValue(LinkedList* list, int32_t index) {
     LinkedListNode* ptr = LinkedListGetNode(list, index);
 
     if(ptr == nullptr) {
@@ -164,35 +164,72 @@ int32_t LinkedListGetValue(LinkedList* list, int index) {
     return ptr->data;
 }
 
+void LinkedListPrint(LinkedList* list) {
+    LinkedListNode* currentNode = list->first;
+
+    if(currentNode == nullptr) {
+        std::cout << "empty" << std::endl;
+
+        return;
+    }
+
+    while(true) {
+        std::cout << currentNode->data;
+
+        currentNode = currentNode->next;
+
+        if(currentNode == nullptr) {
+            std::cout << "\n";
+
+            return;
+        }
+
+        std::cout << ", ";
+    }
+}
+
 void LinkedListPush(LinkedList* list, int32_t data) {
+    //create the new node
     LinkedListNode* newNode = new LinkedListNode();
     newNode->next = nullptr;
     newNode->data = data;
 
-    LinkedListNode* currentNode = list->first;
+    //always gotta do this
+    list->length++;
 
-    while(true) {
-        if(currentNode == nullptr) {
-            list->first = newNode;
-            
-            break;
-        }
 
-        if(currentNode->next == nullptr) {
-            currentNode->next = newNode;
+    if(list->first == nullptr) {
+        list->first = newNode;
 
-            break;
-        }
-
-        currentNode = currentNode->next;
+        return;
     }
 
-    list->length++;
+    //current last node
+    LinkedListNode* lastNode = list->last;
+    if(list->last == nullptr) lastNode = list->first;
+
+    //set current last node to point to the new node
+    lastNode->next = newNode;
+
+    //assign the lists pointer to the last node
+    list->last = newNode;
 
     return;
 }
 
-LinkedList* createLinkedList() {
+void LinkedListSetValue(LinkedList* list, int32_t index, int32_t data) {
+    LinkedListNode* node = LinkedListGetNode(list, index);
+
+    if(node == nullptr) {
+        return;
+    }
+
+    node->data = data;
+
+    return;
+}
+
+LinkedList* LinkedListConstruct() {
     LinkedList* list = new LinkedList();
     list->first = nullptr;
     list->last = nullptr;
@@ -201,18 +238,41 @@ LinkedList* createLinkedList() {
     return list;
 }
 
-int main() {
-    LinkedList* list = createLinkedList();
+void LinkedListDestruct(LinkedList* list) {
+    LinkedListNode* currentNode = list->first;
+    LinkedListNode* nextNode = nullptr;
 
+    while(true) {
+        nextNode = currentNode->next;
+
+        delete currentNode;
+
+        currentNode = nextNode;
+
+        if(currentNode == nullptr) break;
+    }
+
+    delete list;
+}
+
+int main() {
+    LinkedList* list = LinkedListConstruct();
+    LinkedListPrint(list);
 
     LinkedListPush(list, 1);
+    LinkedListPrint(list);
+
     LinkedListPush(list, 12);
+    LinkedListPrint(list);
+
     LinkedListPush(list, 123);
+    LinkedListPrint(list);
+
     LinkedListPush(list, 1234);
+    LinkedListPrint(list);
 
-    uint32_t val = LinkedListGetValue(list, 3);
+    std::cout << LinkedListGetValue(list, 1) << ", " << list->length << std::endl;
 
-    std::cout << val << std::endl;
 
     return 0;
 }
