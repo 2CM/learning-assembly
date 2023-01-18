@@ -161,7 +161,7 @@ section .text
 		;set data at location
 			;eax = LinkedListGetData(list, 3)
 			push	500						;new data
-			push	4						;location
+			push	2						;location
 			push	dword [esp+8]			;list (8 because arg before it)
 			call	LinkedListSetData
 

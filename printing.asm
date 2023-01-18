@@ -898,7 +898,7 @@ section .text
 		
 		prloop5:
 			cmp		ebx, 0
-			jle		prbreak5
+			jl		prbreak5
 
 			;currentChar = stofIntPart[ebx];
             mov     ecx, stofIntPart		;stofIntPart
