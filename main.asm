@@ -1,12 +1,18 @@
+;needed for linker
 global _start
 
+;export variables
+global heapHandle
+global handle
+global written
 
+;kernel32.dll
 extern _ExitProcess
 extern _GetStdHandle
 extern _ReadConsoleA
 
 
-extern handle
+;printing.asm
 extern strprintf
 extern intprintf
 extern floatprintf
@@ -21,7 +27,19 @@ extern printDigit
 extern printInt
 extern printf
 
+;LinkedList.asm
+extern LinkedListConstruct
+extern LinkedListPush
+extern LinkedListPrint
+
 section .data
+	;handle for the heap
+	heapHandle: dd 0
+
+	;printing stuff
+	handle: dd 0
+	written: dd 0
+
 	;msg1
 	msg1: db "Hello, World", 0
 	msg1Len: equ $-msg1
@@ -40,9 +58,9 @@ section .data
 	mychar: db "h"
 	mypi: dd 0x40490fdb		;floating point value
 
+	;inputting
 	inputPrompt: db "Please input a number.", 0xa, 0
 	inputResult: db "You input %i byte(s) (CRLF at the end.)", 0xa, "The string you input was %s", 0xa, "Your input converted to a float is %f.", 0xa, 0
-
 	charsRead: dd 0
 	inputBuffer: times 32 db 0
 
@@ -52,21 +70,6 @@ section .text
         ;ExitProcess(0)
         push    dword 0
         call    _ExitProcess
-
-	printStuff:
-		mov 	ecx, [esp+4]
-		call 	printInt
-		call 	printLineBreak
-
-		mov 	ecx, [esp+8]
-		call 	printInt
-		call 	printLineBreak
-
-		mov 	ecx, [esp+12]
-		call 	printInt
-		call 	printLineBreak
-
-		ret 	12
 
 	;entry
 	_start:
@@ -101,6 +104,45 @@ section .text
 		push 	myname
 		push 	printfmessage
 		call 	printf
+		
+		;linked list testing vvv
+
+		;create it
+			;LinkedList* list = LinkedListConstruct();
+			call	LinkedListConstruct
+			push	eax
+		
+		;print it
+			;LinkedListPrint(list)
+			push	dword [esp+0] 		;linkedList
+			call	LinkedListPrint
+
+		;add elements
+			;LinkedListPush(list, 6)
+			push	6
+			push	dword [esp+4]		;linkedList (4 because arg before it)
+			call 	LinkedListPush
+
+			;LinkedListPush(list, 1)
+			push	1
+			push	dword [esp+4]		;linkedList (4 because arg before it)
+			call 	LinkedListPush
+
+			;LinkedListPush(list, 1000)
+			push	1000
+			push	dword [esp+4]		;linkedList (4 because arg before it)
+			call 	LinkedListPush
+
+
+		;print it again
+			;LinkedListPrint(list)
+			push	dword [esp+0] 		;linkedList
+			call	LinkedListPrint
+
+
+		call	exit
+
+
 
 		;prompt user for input
 		push	inputPrompt

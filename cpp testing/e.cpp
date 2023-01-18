@@ -168,10 +168,14 @@ void LinkedListPrint(LinkedList* list) {
     LinkedListNode* currentNode = list->first;
 
     if(currentNode == nullptr) {
-        std::cout << "empty" << std::endl;
+        std::cout << "[]" << std::endl;
 
         return;
     }
+
+    std::cout << "(" << list->length << ") ";
+    
+    std::cout << "[";
 
     while(true) {
         std::cout << currentNode->data;
@@ -179,9 +183,9 @@ void LinkedListPrint(LinkedList* list) {
         currentNode = currentNode->next;
 
         if(currentNode == nullptr) {
-            std::cout << "\n";
+            std::cout << "]" << std::endl;
 
-            return;
+            break;
         }
 
         std::cout << ", ";
@@ -201,12 +205,14 @@ void LinkedListPush(LinkedList* list, int32_t data) {
     if(list->first == nullptr) {
         list->first = newNode;
 
+        list->last = newNode;
+
         return;
     }
 
     //current last node
     LinkedListNode* lastNode = list->last;
-    if(list->last == nullptr) lastNode = list->first;
+    if(lastNode == nullptr) lastNode = list->first;
 
     //set current last node to point to the new node
     lastNode->next = newNode;

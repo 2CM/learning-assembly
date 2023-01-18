@@ -1,11 +1,16 @@
 ;this file contains things related to printing and the console
 
-global handle
+;main.asm
+extern handle
+extern written
+
+;export variables
 global strprintf
 global intprintf
 global charprintf
 global floatprintf
 
+;export functions
 global print
 global printLineBreak
 global printDigit
@@ -17,7 +22,7 @@ global floorFloat
 global printFloatFrac
 global fracFloat
 
-
+;kernel32.dll
 extern  _GetStdHandle
 extern  _WriteConsoleA
 extern  _ReadConsoleA
@@ -38,10 +43,6 @@ section .data
 	intprintf: db "%i", 0
 	charprintf: db "%c", 0
 	floatprintf: db "%f", 0
-
-	;printing stuff
-	handle: db 0
-	written: db 0
 
 section .text
 	;prints *ecx with length edx
@@ -101,12 +102,12 @@ section .text
 
 		add		dword [esp+0], ecx	;digit += ecx
 
-		if0:
+		prif0:
 			cmp 	cl, 10
-			jl 		else0
+			jl 		prelse0
 
 			add		dword [esp+0], 39
-		else0:
+		prelse0:
 
 		mov		ecx, esp			;ecx = &digit
 		mov 	edx, 1				;length of 1
@@ -169,9 +170,9 @@ section .text
 
 
 
-		if1:
+		prif1:
 			cmp		ecx, 0
-			jne		else1
+			jne		prelse1
 
 			call	printDigit
 
@@ -182,7 +183,7 @@ section .text
 			pop 	eax
 
 			ret
-		else1:
+		prelse1:
 
 		; temp = ecx
 		mov 	[temp], ecx
@@ -231,7 +232,7 @@ section .text
 		mov 	ebx, 0
 		mov 	eax, 0
 
-		loop1:
+		prloop1:
 			; ecx = numberPrintArr[i];
 			; ecx = *( &numberPrintArr + i );
 			mov 	ecx, numberPrintArr
@@ -245,21 +246,21 @@ section .text
 			;         continue; 
 			;     }
 			; }
-			if2: ;if(foundFirstDigit == false)
+			prif2: ;if(foundFirstDigit == false)
 				cmp		al, 0
-				jne		else2
+				jne		prelse2
 
-				if3: ;if(digit != 0)
+				prif3: ;if(digit != 0)
 					cmp 	cl, 0
-					je 		else3
+					je 		prelse3
 
 					mov 	eax, 1
-				else3: ;else
+				prelse3: ;else
 					cmp 	cl, 0
-					jne 	else2
+					jne 	prelse2
 
-					jmp 	continue1
-			else2: ;else
+					jmp 	prcontinue1
+			prelse2: ;else
 
 			
 			; print(ecx);
@@ -267,13 +268,13 @@ section .text
 
 
 
-			continue1:
+			prcontinue1:
 				; i++;
 				inc 	ebx
 				
 				; if(i < 10) loop();
 				cmp 	ebx, 10
-				jl		loop1
+				jl		prloop1
 		;
 
 		;cleaning up
@@ -366,7 +367,7 @@ section .text
 		;i=0;
 		mov		ebx, 0
 
-		loop7:
+		prloop7:
 			;temp *= 10;
 			push	10				;int ten = 10;
 			fild	dword [esp+0]	;float floatTen = 10; (st0 = 10; st1 = temp)
@@ -400,13 +401,13 @@ section .text
 			fsubp	st1				;temp -= floatIntTemp; delete floatIntTemp
 			
 
-			continue7:
+			prcontinue7:
 				;i++;
 				inc 	ebx
 
 				;if(i < 16) loop();
 				cmp		ebx, 16
-				jl		loop7
+				jl		prloop7
 
 		fstp	dword [esp+0]
 
@@ -499,24 +500,24 @@ section .text
 
         mov     ebx, 0		;i
 
-        loop3:
+        prloop3:
             ;currentChar = [str+ebx];
             mov     ecx, [esp+16+16+4]	;16 for register preservation, 16 for local variables, 4 for arg location
             add     ecx, ebx
 			mov		ecx, [ecx]
             mov     [esp+0], ecx	;currentChar
 
-			if5:	;if(primedForType == true)
+			prif5:	;if(primedForType == true)
 				cmp		dword [esp+8], 1	;primedForType
-				jne		else5
+				jne		prelse5
 
 				add		dword [esp+12], 4 	;currentInputArgLocation
 
 
 				;integer
-				if7:	;if(currentChar == 'i')
+				prif7:	;if(currentChar == 'i')
 					cmp		byte [esp+0], "i"	;currentChar
-					jne		else7
+					jne		prelse7
 
 					;ecx = [esp+[preserving registers size]+[local variables size]+currentInputArgLocation]
 					mov		ecx, esp
@@ -529,12 +530,12 @@ section .text
 
 					call	printInt
 
-				else7:
+				prelse7:
 
 				;hex
-				if8:	;if(currentChar == 'x')
+				prif8:	;if(currentChar == 'x')
 					cmp		byte [esp+0], "x"	;currentChar
-					jne		else8
+					jne		prelse8
 
 					;ecx = [esp+[preserving registers size]+[local variables size]+currentInputArgLocation]
 					mov		ecx, esp
@@ -547,12 +548,12 @@ section .text
 
 					call	printInt
 
-				else8:
+				prelse8:
 
 				;string
-				if9:	;if(currentChar == 's')
+				prif9:	;if(currentChar == 's')
 					cmp		byte [esp+0], "s"	;currentChar
-					jne		else9
+					jne		prelse9
 
 					;ecx = [esp+[preserving registers size]+[local variables size]+currentInputArgLocation]
 					mov		ecx, esp
@@ -575,12 +576,12 @@ section .text
 
 					pop 	ebx
 
-				else9:
+				prelse9:
 
 				;char
-				if10:	;if(currentChar == 'c')
+				prif10:	;if(currentChar == 'c')
 					cmp		byte [esp+0], "c"	;currentChar
-					jne		else10
+					jne		prelse10
 
 					;ecx = [esp+[preserving registers size]+[local variables size]+currentInputArgLocation]
 					mov		ecx, esp
@@ -592,11 +593,11 @@ section .text
 
 					call 	print
 
-				else10:
+				prelse10:
 
-				if11:	;if(currentChar == 'f')
+				prif11:	;if(currentChar == 'f')
 					cmp		byte [esp+0], "f"	;currentChar
-					jne		else11
+					jne		prelse11
 
 					mov		ecx, esp
 					add		ecx, 16			;preserving registers
@@ -642,12 +643,12 @@ section .text
 					
 					;delete num;
 					pop		edx
-				else11:
+				prelse11:
 
 				;percent
-				if12:
+				prif12:
 					cmp		byte [esp+0], "%"	;currentChar
-					jne		else12
+					jne		prelse12
 
 					push 	"%"
 					
@@ -660,28 +661,28 @@ section .text
 					;this one doesnt depend on an arg, so just undo it
 					sub		dword [esp+12], 4 	;currentInputArgLocation
 
-				else12:
+				prelse12:
 
 
 				;primedForType = false;
 				mov		dword [esp+8], 0	;primedForType
 
 				;continue;
-				jmp		continue3
+				jmp		prcontinue3
 			
-			else5:
+			prelse5:
 
-			if6:	;if(currentChar == '%')
+			prif6:	;if(currentChar == '%')
 				cmp		byte [esp+0], "%"	;currentChar
-				jne		else6
+				jne		prelse6
 
 				;primedForType = true;
 				mov		dword [esp+8], 1	;primedForType
 
 				;continue;
-				jmp		continue3
+				jmp		prcontinue3
 
-			else6:
+			prelse6:
 	
 
             mov     edx, 1
@@ -689,13 +690,13 @@ section .text
         	call    print
 
 
-            continue3:
+            prcontinue3:
                 ; i++;
 				inc 	ebx
 				
 				; if(i < 10) loop();
 				cmp 	ebx, [esp+4]
-				jl		loop3
+				jl		prloop3
 
 		;delete currentChar
 		pop 	edx
@@ -723,19 +724,19 @@ section .text
 	isNumber:
 		mov 	eax, 0
 
-		if14:	;if(input >= 48)
+		prif14:	;if(input >= 48)
 			cmp		byte [esp+4], 48	;input
-			jl		else14
+			jl		prelse14
 
-			if15:	;if(input <= 57)
+			prif15:	;if(input <= 57)
 				cmp		byte [esp+4], 57	;input
-				jg		else15
+				jg		prelse15
 
 				mov 	eax, 1
 
-			else15:
+			prelse15:
 
-		else14:
+		prelse14:
 
 		ret 	4
 	
@@ -773,68 +774,68 @@ section .text
 			push 	dword [eax]
 
 
-		if16:	;if(currentChar == '+')
+		prif16:	;if(currentChar == '+')
 			cmp		byte [esp+0], "+"	;currentChar
-			jne		else16
+			jne		prelse16
 
 			mov 	dword [esp+8], 1	;numbersStart
 
-		else16:
+		prelse16:
 
-		if17:	;if(currentChar == '-')
+		prif17:	;if(currentChar == '-')
 			cmp		byte [esp+0], "-"	;currentChar
-			jne		else17
+			jne		prelse17
 
 			mov 	dword [esp+8], 1	;numbersStart
 
 			mov		dword [esp+16], 1	;isNegative
 
-		else17:
+		prelse17:
 
 		;this loop splits the string into stofIntPart and stofFracPart
 		
 		;i = numbersStart
 		mov 	ebx, [esp+8]	;numberStart
 
-		loop4:
+		prloop4:
             ;currentChar = str[ebx];
             mov     ecx, [esp+16+20+4]	;16 for register preservation, 20 for local variables, 4 for arg location
             add     ecx, ebx
 			mov		ecx, [ecx]
             mov     [esp+0], ecx		;currentChar
 
-			if18:	;if(currentChar == '.')
+			prif18:	;if(currentChar == '.')
 				cmp		byte [esp+0], "."	;currentChar
-				jne		else18
+				jne		prelse18
 
-				if19:	;if(pointLocation == 127)
+				prif19:	;if(pointLocation == 127)
 					cmp		dword [esp+12], 127	;pointLocation
-					jne		else19
+					jne		prelse19
 
 					mov		[esp+12], ebx
 
-					jmp 	continue4
+					jmp 	prcontinue4
 
-				else19:
+				prelse19:
 
-			else18:
+			prelse18:
 
 			;eax = isNumber(currentChar);
 			push	dword [esp+0]		;currentChar
 			call	isNumber
 
-			if20:	;if(eax == 0)
+			prif20:	;if(eax == 0)
 				cmp		eax, 0
-				jne		else20
+				jne		prelse20
 
 				;break;
 				jmp 	break4
 
-			else20:
+			prelse20:
 
-			if21:	;if(pointLocation > i)
+			prif21:	;if(pointLocation > i)
 				cmp 	ebx, [esp+12]		;pointLocation
-				jle 	else21
+				jle 	prelse21
 
 				;fracPart[i-pointLocation-1] = currentChar;
 				mov 	ecx, stofFracPart
@@ -844,11 +845,11 @@ section .text
 				mov		edx, dword [esp+0]	;currentChar
 				mov		[ecx], dl
 
-			else21:
+			prelse21:
 
-			if22:	;if(pointLocation <= i)
+			prif22:	;if(pointLocation <= i)
 				cmp 	ebx, [esp+12]		;pointLocation
-				jg 		else22
+				jg 		prelse22
 
 				;intPart[i-numbersStart] = currentChar;
 				mov 	ecx, stofIntPart
@@ -857,15 +858,15 @@ section .text
 				mov		edx, dword [esp+0]	;currentChar
 				mov		[ecx], dl
 
-			else22:
+			prelse22:
 
-            continue4:
+            prcontinue4:
                 ; i++;
 				inc 	ebx
 				
 				; if(i < 32) loop();
 				cmp 	ebx, 32
-				jl		loop4
+				jl		prloop4
 
 			break4:
 
@@ -880,21 +881,21 @@ section .text
 		;i = 15
 		mov 	ebx, 15
 		
-		loop5:
+		prloop5:
 			;currentChar = stofIntPart[ebx];
             mov     ecx, stofIntPart		;stofIntPart
             add     ecx, ebx
 			mov		ecx, [ecx]
             mov     [esp+0], ecx		;currentChar
 
-			if23:	;if(currentChar == 0)
+			prif23:	;if(currentChar == 0)
 				cmp		byte [esp+0], 0	;currentChar
-				jne		else23
+				jne		prelse23
 
 				;continue;
-				jmp		continue5
+				jmp		prcontinue5
 
-			else23:
+			prelse23:
 
 			;eax = charToNum(currentChar)
 			push	dword [esp+0] 	;currentChar
@@ -921,13 +922,13 @@ section .text
 			mov		[esp+4], eax	;placeValue
 
 
-            continue5:
+            prcontinue5:
                 ; i--;
 				dec 	ebx
 
 				; if(i > 0) loop();
 				cmp 	ebx, 0
-				jge		loop5
+				jge		prloop5
 
 
 
@@ -939,21 +940,21 @@ section .text
 		;i = 0;
 		mov 	ebx, 0
 
-		loop6:
+		prloop6:
 			;currentChar = stofIntPart[ebx];
             mov     ecx, stofFracPart
             add     ecx, ebx
 			mov		ecx, [ecx]
             mov     [esp+0], ecx		;currentChar
 
-			if24:	;if(currentChar == 0)
+			prif24:	;if(currentChar == 0)
 				cmp		byte [esp+0], 0	;currentChar
-				jne		else24
+				jne		prelse24
 
 				;continue;
-				jmp		continue6
+				jmp		prcontinue6
 
-			else24:
+			prelse24:
 
 			;eax = charToNum(currentChar)
 			push	dword [esp+0] 	;currentChar
@@ -991,23 +992,23 @@ section .text
 			mul		ecx
 			mov		[esp+4], eax	;placeValue
 			
-            continue6:
+            prcontinue6:
                 ; i++;
 				inc 	ebx
 
 				; if(i < 16) loop();
 				cmp 	ebx, 16
-				jl		loop6
+				jl		prloop6
 
 
 		;sign
-		if25:	;if(isNegative == true)
+		prif25:	;if(isNegative == true)
 			cmp 	byte [esp+16], 1
-			jne		else25
+			jne		prelse25
 
 			;flip sign of st0
 			fchs
-		else25:
+		prelse25:
 
 
 		;delete currentChar
