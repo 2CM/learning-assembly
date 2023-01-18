@@ -129,6 +129,7 @@ section .text
 		push 	ecx
 		push 	edx
 
+		; this is outdated. will fix later
 		; if(ecx == 0) {
 		; 	print("0");
 		; }
@@ -226,13 +227,17 @@ section .text
 			mov 	eax, [temp]
 			cmp		eax, 0
 			jg		recur
-		;
+		
 
 		; i = 0;
 		mov 	ebx, 0
 		mov 	eax, 0
 
 		prloop1:
+			cmp		ebx, 10
+			jge		prbreak1
+
+
 			; ecx = numberPrintArr[i];
 			; ecx = *( &numberPrintArr + i );
 			mov 	ecx, numberPrintArr
@@ -273,9 +278,10 @@ section .text
 				inc 	ebx
 				
 				; if(i < 10) loop();
-				cmp 	ebx, 10
-				jl		prloop1
-		;
+				jmp		prloop1
+
+			prbreak1:
+		
 
 		;cleaning up
 		mov		dword [numberPrintIterations], 0
@@ -368,6 +374,9 @@ section .text
 		mov		ebx, 0
 
 		prloop7:
+			cmp 	ebx, 16
+			jge		prbreak7
+
 			;temp *= 10;
 			push	10				;int ten = 10;
 			fild	dword [esp+0]	;float floatTen = 10; (st0 = 10; st1 = temp)
@@ -405,9 +414,9 @@ section .text
 				;i++;
 				inc 	ebx
 
-				;if(i < 16) loop();
-				cmp		ebx, 16
-				jl		prloop7
+				jmp		prloop7
+
+			prbreak7:
 
 		fstp	dword [esp+0]
 
@@ -431,7 +440,10 @@ section .text
 
 		mov 	ebx, 0
 
-		loop2:
+		prloop2:
+			cmp		ebx, 1000
+			jge		prbreak2
+
 			;currentChar = [str+ebx];
             mov     ecx, [esp+8+4+4]	;8 for register preservation, 4 for local variables, 4 for arg location
             add     ecx, ebx
@@ -442,7 +454,7 @@ section .text
 				cmp		byte [esp+0], 0x0
 				jne		else4
 
-				jmp 	break2
+				jmp 	prbreak2
 			
 			else4:
 
@@ -450,11 +462,9 @@ section .text
                 ; i++;
 				inc 	ebx
 
-				; if(i < 1000) loop();
-				cmp 	ebx, 1000
-				jl		loop2
+				jmp 	prloop2
 			
-			break2:
+			prbreak2:
 
 
 		mov		eax, ebx
@@ -501,6 +511,9 @@ section .text
         mov     ebx, 0		;i
 
         prloop3:
+			cmp		ebx, [esp+4]
+			jge		prbreak3
+
             ;currentChar = [str+ebx];
             mov     ecx, [esp+16+16+4]	;16 for register preservation, 16 for local variables, 4 for arg location
             add     ecx, ebx
@@ -694,9 +707,9 @@ section .text
                 ; i++;
 				inc 	ebx
 				
-				; if(i < 10) loop();
-				cmp 	ebx, [esp+4]
-				jl		prloop3
+				jmp		prloop3
+			
+			prbreak3:
 
 		;delete currentChar
 		pop 	edx
@@ -798,6 +811,9 @@ section .text
 		mov 	ebx, [esp+8]	;numberStart
 
 		prloop4:
+			cmp		ebx, 32
+			jge		prbreak4
+
             ;currentChar = str[ebx];
             mov     ecx, [esp+16+20+4]	;16 for register preservation, 20 for local variables, 4 for arg location
             add     ecx, ebx
@@ -829,7 +845,7 @@ section .text
 				jne		prelse20
 
 				;break;
-				jmp 	break4
+				jmp 	prbreak4
 
 			prelse20:
 
@@ -865,10 +881,9 @@ section .text
 				inc 	ebx
 				
 				; if(i < 32) loop();
-				cmp 	ebx, 32
-				jl		prloop4
+				jmp		prloop4
 
-			break4:
+			prbreak4:
 
 
 		;float evaluated = 0;
@@ -882,6 +897,9 @@ section .text
 		mov 	ebx, 15
 		
 		prloop5:
+			cmp		ebx, 0
+			jle		prbreak5
+
 			;currentChar = stofIntPart[ebx];
             mov     ecx, stofIntPart		;stofIntPart
             add     ecx, ebx
@@ -927,8 +945,9 @@ section .text
 				dec 	ebx
 
 				; if(i > 0) loop();
-				cmp 	ebx, 0
-				jge		prloop5
+				jmp		prloop5
+			
+			prbreak5:
 
 
 
@@ -941,6 +960,9 @@ section .text
 		mov 	ebx, 0
 
 		prloop6:
+			cmp		ebx, 16
+			jge		prbreak6
+
 			;currentChar = stofIntPart[ebx];
             mov     ecx, stofFracPart
             add     ecx, ebx
@@ -997,8 +1019,9 @@ section .text
 				inc 	ebx
 
 				; if(i < 16) loop();
-				cmp 	ebx, 16
-				jl		prloop6
+				jmp		prloop6
+
+			prbreak6:
 
 
 		;sign

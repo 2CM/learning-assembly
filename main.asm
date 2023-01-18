@@ -31,6 +31,8 @@ extern printf
 extern LinkedListConstruct
 extern LinkedListPush
 extern LinkedListPrint
+extern LinkedListGetNode
+extern LinkedListGetData
 
 section .data
 	;handle for the heap
@@ -114,31 +116,50 @@ section .text
 		
 		;print it
 			;LinkedListPrint(list)
-			push	dword [esp+0] 		;linkedList
+			push	dword [esp+0] 		;list
 			call	LinkedListPrint
 
 		;add elements
 			;LinkedListPush(list, 6)
 			push	6
-			push	dword [esp+4]		;linkedList (4 because arg before it)
+			push	dword [esp+4]		;list (4 because arg before it)
 			call 	LinkedListPush
 
 			;LinkedListPush(list, 1)
 			push	1
-			push	dword [esp+4]		;linkedList (4 because arg before it)
+			push	dword [esp+4]		;list (4 because arg before it)
 			call 	LinkedListPush
 
 			;LinkedListPush(list, 1000)
 			push	1000
-			push	dword [esp+4]		;linkedList (4 because arg before it)
+			push	dword [esp+4]		;list (4 because arg before it)
 			call 	LinkedListPush
 
 
 		;print it again
 			;LinkedListPrint(list)
-			push	dword [esp+0] 		;linkedList
+			push	dword [esp+0] 		;list
 			call	LinkedListPrint
 
+
+		push	3
+		push	dword [esp+4]			;list (4 because arg before it)
+		call	LinkedListGetData
+
+		push 	eax
+		push	intprintf
+		call	printf
+		pop		ebx
+		pop		ebx
+		call	printLineBreak
+
+		; add		eax, 0
+		; mov		eax, [eax]
+		; push	eax
+		; push	intprintf
+		; call	printf
+		; pop		ebx
+		; pop		ebx
 
 		call	exit
 

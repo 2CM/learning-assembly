@@ -142,11 +142,13 @@ LinkedListNode* LinkedListGetNode(LinkedList* list, int32_t index) {
     LinkedListNode* ptr = list->first;
 
     for(int32_t i = 0; i < index; i++) {
-        // std::cout << ptr->data << std::endl;
-
-        if(ptr == nullptr) return nullptr;
-
         ptr = ptr->next;
+
+        if(ptr == nullptr) {
+            std::cout << "out of bounds" << std::endl;
+
+            break;
+        }
     }
 
     return ptr;
@@ -156,8 +158,6 @@ int32_t LinkedListGetValue(LinkedList* list, int32_t index) {
     LinkedListNode* ptr = LinkedListGetNode(list, index);
 
     if(ptr == nullptr) {
-        std::cout << "out of bounds" << std::endl;
-
         return 0;
     }
 
@@ -277,7 +277,10 @@ int main() {
     LinkedListPush(list, 1234);
     LinkedListPrint(list);
 
-    std::cout << LinkedListGetValue(list, 1) << ", " << list->length << std::endl;
+    LinkedListNode* a = LinkedListGetNode(list, 30);
+
+    std::cout << "a" << std::endl;
+    std::cout << a->data << std::endl;
 
 
     return 0;

@@ -4,6 +4,8 @@
 global LinkedListConstruct
 global LinkedListPush
 global LinkedListPrint
+global LinkedListGetNode
+global LinkedListGetData
 
 ;main.asm
 extern heapHandle
@@ -32,7 +34,7 @@ extern intprintf
 ;};
 
 section .data
-    outOfBoundsMessage: db "out of bounds", 0xa, 0
+    outOfBoundsMessage: db "ERROR: %i is out of bounds.", 0xa, 0
 
     ;for printing it
     emptyMessage: db "[]", 0xa, 0
@@ -75,10 +77,10 @@ section .text
         push    ecx
 
         ;LinkedListNode* newNode;
-        push    0
+        push    nullptr
 
         ;LinkedListNode* currentLastNode;
-        push    0
+        push    nullptr
 
         ;heapHandle = GetProcessHeap()
         call    _GetProcessHeap
@@ -202,7 +204,7 @@ section .text
         push    ecx
 
         ;LinkedList* currentNode;
-        push    0
+        push    nullptr
 
         ;currentNode = list.first
         mov     eax, dword [esp+4+12+4]     ;&list (4 for local variables, 12 for register preservation, 4 for arg location)
@@ -293,3 +295,90 @@ section .text
         pop     eax
 
         ret     4
+
+    ;gets the node at an index and returns nullptr if its out of bounds
+    ;LinkedListNode* LinkedListGetNode(LinkedList* list, int32_t index)
+    LinkedListGetNode:
+        ;register preservation
+        push    ebx
+        push    ecx
+
+        ;LinkedListNode* currentNode;
+        push    nullptr
+
+        ;currentNode = list.first;
+        mov     eax, dword [esp+4+8+4]      ;&list (4 for local variables, 8 for register preservation, 4 for arg location)
+        add     eax, 0                      ;&list.first
+        mov     eax, [eax]                  ;list.first
+        mov     dword [esp+0], eax
+
+
+        ;i = 0;
+        mov     ebx, 0
+
+        llloop2:
+            cmp		ebx, dword [esp+4+8+8]  ;index (4 for local variables, 8 for register preservation, 8 for arg location)
+            jge		llbreak2
+
+            ;currentNode = currentNode.next
+            mov     eax, dword [esp+0]  ;&currentNode
+            add     eax, 4              ;&currentNode.next
+            mov     eax, [eax]          ;currentNode.next
+            mov     dword [esp+0], eax
+
+            llif4:  ;if(currentNode == nullptr)
+                cmp     dword [esp+0], nullptr 
+                jne     llelse4
+
+                ;printf("ERROR: %i is out of bounds", index)
+                push    dword [esp+4+8+8]    ;index (4 for local variables, 8 for register preservation, 8 for arg location)
+                push    outOfBoundsMessage
+                call    printf
+                pop     eax
+                pop     eax
+
+                ;break;
+                jmp     llbreak2
+
+            llelse4:
+
+            llcontinue2:
+                ;i++
+                inc     ebx
+
+                jmp     llloop2
+
+            llbreak2:
+
+
+        ;return currentNode
+            ;eax = currentNode; delete currentNode; (from the stack)
+            pop     eax
+
+            ;register preservation
+            pop    ecx
+            pop    ebx
+            
+            ret     8
+
+    ;gets the data at an index
+    ;int32_t LinkedListGetData(LinkedList* list, int32_t index)
+    LinkedListGetData:
+        ;eax = LinkedListGetNode(list, index);
+        push    dword [esp+8]       ;index
+        push    dword [esp+4+4]     ;list (4 because arg before it)
+        call    LinkedListGetNode
+
+        llif5:  ;if(eax == nullptr)
+            cmp     eax, nullptr
+            jne     llelse5
+
+            ;return 0
+                mov     eax, 0
+                ret     8
+            
+        llelse5:
+
+        mov     eax, [eax]  ;LinkedListGetNode(list, index).data
+
+        ret     8
