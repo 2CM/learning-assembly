@@ -18,6 +18,8 @@ extern printf
 extern intprintf
 
 
+%define nullptr 0
+
 ;struct LinkedList {
 ;   LinkedListNode* first;
 ;   LinkedListNode* last;
@@ -54,10 +56,10 @@ section .text
         call    _HeapAlloc
 
         ;newList.first = nullptr;
-        mov     dword [eax+0], 0    ;first
+        mov     dword [eax+0], nullptr    ;first
 
         ;newList.last = nullptr;
-        mov     dword [eax+4], 0    ;last
+        mov     dword [eax+4], nullptr    ;last
 
         ;newList.length = 0;
         mov     dword [eax+8], 0    ;length
@@ -100,7 +102,7 @@ section .text
         ;newNode.next = nullptr
         mov     eax, dword [esp+4]      ;&newNode
         add     eax, 4                  ;&newNode.next
-        mov     dword [eax], 0          ;nullptr
+        mov     dword [eax], nullptr    ;nullptr
 
         ;list.length = list.length + 1;
         mov     eax, dword [esp+8+12+4] ;&list (8 for local variables, 12 for register preservation, 8 for arg location)
@@ -113,7 +115,7 @@ section .text
             mov     eax, dword [esp+8+12+4]  ;list (8 for local variables, 12 for register preservation, 8 for arg location)
             add     eax, 0                   ;list.first
             mov     ecx, [eax]
-            cmp     ecx, 0
+            cmp     ecx, nullptr
             jne     llelse0
 
             mov     eax, eax
@@ -154,7 +156,7 @@ section .text
         mov     dword [esp+0], eax      ;currentLastNode
 
         llif1:  ;if(currentLastNode == nullptr)
-            cmp     dword [esp+4], 0
+            cmp     dword [esp+4], nullptr
             jne     llelse1
 
             ;currentLastNode = list->first
@@ -209,7 +211,7 @@ section .text
         mov     dword [esp+0], eax          ;currentNode
 
         llif2:  ;if(currentNode == nullptr)
-            cmp     dword [esp+0], 0
+            cmp     dword [esp+0], nullptr
             jne     llelse2
             
             ;printf("[]\n");
@@ -258,7 +260,7 @@ section .text
             mov     dword [esp+0], eax
 
             llif3:  ;if(currentNode == nullptr)
-                cmp     dword [esp+0], 0
+                cmp     dword [esp+0], nullptr
                 jne     llelse3
 
                 ;printf("]")
