@@ -6,6 +6,7 @@ global LinkedListPush
 global LinkedListPrint
 global LinkedListGetNode
 global LinkedListGetData
+global LinkedListSetData
 
 ;main.asm
 extern heapHandle
@@ -364,12 +365,12 @@ section .text
     ;gets the data at an index
     ;int32_t LinkedListGetData(LinkedList* list, int32_t index)
     LinkedListGetData:
-        ;eax = LinkedListGetNode(list, index);
+        ;LinkedListNode* node (eax) = LinkedListGetNode(list, index);
         push    dword [esp+8]       ;index
         push    dword [esp+4+4]     ;list (4 because arg before it)
         call    LinkedListGetNode
 
-        llif5:  ;if(eax == nullptr)
+        llif5:  ;if(node == nullptr)
             cmp     eax, nullptr
             jne     llelse5
 
@@ -379,6 +380,43 @@ section .text
             
         llelse5:
 
-        mov     eax, [eax]  ;LinkedListGetNode(list, index).data
+        ;return node.data
+        mov     eax, [eax]  ;node.data
 
         ret     8
+
+    ;sets the data at an index
+    ;void LinkedListSetData(LinkedList* list, int32_t index, int32_t data)
+    LinkedListSetData:
+        ;register preservation
+        push    eax
+        push    ecx
+
+        ;LinkedListNode* node (eax) = LinkedListGetNode(list, index);
+        push    dword [esp+8+8]       ;index (8 for register preservation)
+        push    dword [esp+8+4+4]     ;list (8 for register preservation, 4 because arg before it)
+        call    LinkedListGetNode
+
+        llif6:  ;if(value == nullptr)
+            cmp     eax, nullptr
+            jne     llelse6
+
+            ;return 0
+                ;register preservation
+                pop     ecx
+                pop     eax
+
+                ret     12
+            
+        llelse6:
+
+        ;value.data = data
+        mov     ecx, dword [esp+8+12]   ;data (8 for register preservation, 12 for arg location)
+        mov     [eax], ecx
+
+        ;return 0
+            ;register preservation
+            pop     ecx
+            pop     eax
+
+            ret     12
