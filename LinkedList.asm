@@ -7,6 +7,7 @@ global LinkedListPrint
 global LinkedListGetNode
 global LinkedListGetData
 global LinkedListSetData
+global LinkedListDeconstruct
 
 ;main.asm
 extern heapHandle
@@ -14,6 +15,7 @@ extern heapHandle
 ;kernel32.dll
 extern _GetProcessHeap
 extern _HeapAlloc
+extern _HeapFree
 
 
 ;printing.asm
@@ -196,6 +198,11 @@ section .text
 
             ret     8
     
+    
+    ;pushes an element to a linked list
+    ;void LinkedListPushBack(LinkedList* list, int32_t data)
+    LinkedListPushBack:
+
     ;prints a linked list in javascript array form. "(5) [1, 2, 3, 4, 5]" | "[]"
     ;void LinkedListPrint(LinkedList* list)
     LinkedListPrint:
@@ -420,3 +427,73 @@ section .text
             pop     eax
 
             ret     12
+
+    ;deconstructs a linked list
+    ;void LinkedListDeconstruct(LinkedList* list)
+    LinkedListDeconstruct:
+        ;register preservation
+        push    eax
+
+        ;LinkedListNode* currentNode = list.first;
+        mov     eax, dword [esp+4+4]        ;&list          (4 for register preservation, 4 for arg location)
+        add     eax, 0                      ;&list.first
+        mov     eax, [eax]                  ;list.first
+        push    eax
+
+        ;LinkedListNode* nextNode = nullptr;
+        push    nullptr
+
+        ;while(true)
+        llloop3:
+            ;nextNode = currentNode.next;
+            mov     eax, dword [esp+4]      ;&currentNode
+            add     eax, 4                  ;&currentNode.next
+            mov     eax, [eax]              ;currentNode.next
+            mov     dword [esp+0], eax
+
+            ;delete currentNode;
+            push    dword [esp+4]      ;currentNode
+            push    dword 1            ;0
+            call    _GetProcessHeap
+            mov     [heapHandle], eax
+            push    dword [heapHandle]
+            call    _HeapFree
+
+
+            ;currentNode = nextNode;
+            mov     eax, dword [esp+0]      ;nextNode
+            mov     dword [esp+4], eax      ;currentNode
+
+            llif7: ;if(currentNode == nullptr)
+                cmp     dword [esp+4], nullptr
+                jne     llelse7
+
+                ;break;
+                jmp     llbreak3
+
+            llelse7:
+
+            llcontinue3:
+                jmp     llloop3
+                
+            llbreak3:
+
+        ;delete list;
+        push    dword [esp+8+4+4]  ;list (8 for local variables, 4 for register preservation, 4 for arg location)
+        push    dword 1            ;0
+        call    _GetProcessHeap
+        mov     [heapHandle], eax
+        push    dword [heapHandle]
+        call    _HeapFree
+
+        ;return
+            ;delete nextNode; (from the stack)
+            pop     eax
+
+            ;delete currentNode; (from the stack)
+            pop     eax
+
+            ;register preservation
+            pop     eax
+
+            ret     4

@@ -34,6 +34,7 @@ extern LinkedListPrint
 extern LinkedListGetNode
 extern LinkedListGetData
 extern LinkedListSetData
+extern LinkedListDeconstruct
 
 section .data
 	;handle for the heap
@@ -179,6 +180,16 @@ section .text
 			pop		ebx
 			pop		ebx
 			call	printLineBreak
+
+		;deconstruct it
+			push	dword [esp+0]
+			call	LinkedListDeconstruct
+
+
+		;print it again again
+			;LinkedListPrint(list)
+			push	dword [esp+0] 		;list
+			call	LinkedListPrint
 
 
 		call	exit
