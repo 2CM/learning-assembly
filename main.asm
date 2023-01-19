@@ -36,6 +36,8 @@ extern LinkedListGetData
 extern LinkedListSetData
 extern LinkedListDeconstruct
 
+extern LinkedListElementPrintString
+
 section .data
 	;handle for the heap
 	heapHandle: dd 0
@@ -62,11 +64,15 @@ section .data
 	mychar: db "h"
 	mypi: dd 0x40490fdb		;floating point value
 
+	seperator: db "--------------", 0xa, 0
+
 	;inputting
 	inputPrompt: db "Please input a number.", 0xa, 0
 	inputResult: db "You input %i byte(s) (CRLF at the end.)", 0xa, "The string you input was %s", 0xa, "Your input converted to a float is %f.", 0xa, 0
 	charsRead: dd 0
 	inputBuffer: times 32 db 0
+
+	linkedListInputPrompt: db "Input a number to be put in the linked list. (q = quit)", 0xa, 0
 
 section .text
 	;exits from the program
@@ -74,6 +80,103 @@ section .text
         ;ExitProcess(0)
         push    dword 0
         call    _ExitProcess
+
+	userInputPrompt:
+		;prompt user for input
+		push	inputPrompt
+		call	printf
+
+		;read input
+			;handle = GetStdHandle(-10)
+			push    -10
+			call    _GetStdHandle
+			mov     [handle], eax
+
+
+			;ReadConsole(handle, &inputBuffer, 32, charsRead, NULL)
+			push 	0
+			push 	charsRead
+			push 	32
+			push 	inputBuffer
+			push 	dword [handle]
+			call 	_ReadConsoleA
+
+		;print results
+		push	inputBuffer			;eax = stof(inputBuffer)
+		call 	stof				;^
+		push	eax					;^
+		push	inputBuffer			;text inputted
+		push	dword [charsRead]	;length of input (plus CRLF)
+		push	inputResult
+		call	printf
+		pop		eax					;delete args
+		pop		eax					;^
+		pop		eax					;^
+
+		ret
+
+	testLinkedList:
+		;LinkedList* numbersList = new LinkedList();
+		call	LinkedListConstruct
+		push	eax
+		
+		;float numberInput = 0;
+		push	0
+
+		mov		byte [LinkedListElementPrintString+1], "f"
+
+		;while(true)
+		promptAddToArr:
+			;prompt user for input
+			push	linkedListInputPrompt
+			call	printf
+
+			;read input
+				;handle = GetStdHandle(-10)
+				push    -10
+				call    _GetStdHandle
+				mov     [handle], eax
+
+
+				;ReadConsole(handle, &inputBuffer, 32, charsRead, NULL)
+				push 	0
+				push 	charsRead
+				push 	32
+				push 	inputBuffer
+				push 	dword [handle]
+				call 	_ReadConsoleA
+
+			;stop asking for input if q is the input
+			cmp		byte [inputBuffer], "q"
+			je		stopAsking
+
+			;numberInput = stof(inputBuffer);
+			push	inputBuffer
+			call 	stof
+			mov		dword [esp+0], eax
+
+			;LinkedListPush(numbersList, numberInput)
+			push	dword [esp+0]		;numberInput
+			push	dword [esp+4+4]		;numbersList (4 because arg offset)
+			call	LinkedListPush
+
+			;LinkedListPrint(numbersList)
+			push	dword [esp+4]		;numbersList
+			call	LinkedListPrint
+
+			jmp		promptAddToArr
+
+			stopAsking:
+
+		;delete numberInput; (from the stack)
+		pop		eax
+
+		push	dword [esp+0]
+		call	LinkedListDeconstruct
+		
+		pop		eax
+
+		ret
 
 	;entry
 	_start:
@@ -109,120 +212,19 @@ section .text
 		push 	printfmessage
 		call 	printf
 		
-		;linked list testing vvv
 
-		;create it
-			;LinkedList* list = LinkedListConstruct();
-			call	LinkedListConstruct
-			push	eax
-		
-		;print it
-			;LinkedListPrint(list)
-			push	dword [esp+0] 		;list
-			call	LinkedListPrint
-
-		;add elements
-			;LinkedListPush(list, 6)
-			push	6
-			push	dword [esp+4]		;list (4 because arg before it)
-			call 	LinkedListPush
-
-			;LinkedListPush(list, 1)
-			push	1
-			push	dword [esp+4]		;list (4 because arg before it)
-			call 	LinkedListPush
-
-			;LinkedListPush(list, 1000)
-			push	1000
-			push	dword [esp+4]		;list (4 because arg before it)
-			call 	LinkedListPush
+		;testing stuff
+		; call	userInputPrompt
 
 
-		;print it again
-			;LinkedListPrint(list)
-			push	dword [esp+0] 		;list
-			call	LinkedListPrint
-
-
-		;get data at location and print
-			;eax = LinkedListGetData(list, 3)
-			push	2						;location
-			push	dword [esp+4]			;list (4 because arg before it)
-			call	LinkedListGetData
-
-			;printf("%i\n", eax)
-			push 	eax
-			push	intprintf
-			call	printf
-			pop		ebx
-			pop		ebx
-			call	printLineBreak
-
-
-		;set data at location
-			;eax = LinkedListGetData(list, 3)
-			push	500						;new data
-			push	2						;location
-			push	dword [esp+8]			;list (8 because arg before it)
-			call	LinkedListSetData
-
-
-		;get data at location and print (again)
-			;eax = LinkedListGetData(list, 3)
-			push	2						;location
-			push	dword [esp+4]			;list (4 because arg before it)
-			call	LinkedListGetData
-
-			;printf("%i\n", eax)
-			push 	eax
-			push	intprintf
-			call	printf
-			pop		ebx
-			pop		ebx
-			call	printLineBreak
-
-		;deconstruct it
-			push	dword [esp+0]
-			call	LinkedListDeconstruct
-
-
-		;print it again again
-			;LinkedListPrint(list)
-			push	dword [esp+0] 		;list
-			call	LinkedListPrint
-
-
-		call	exit
-
-
-
-		;prompt user for input
-		push	inputPrompt
+		;seperate sections ------------
+		push	seperator
 		call	printf
 
-		;read input
-			;handle = GetStdHandle(-10)
-			push    -10
-			call    _GetStdHandle
-			mov     [handle], eax
 
+		;testing more stuff
+		call	testLinkedList
 
-			;ReadConsole(handle, &inputBuffer, 32, charsRead, NULL)
-			push 	0
-			push 	charsRead
-			push 	32
-			push 	inputBuffer
-			push 	dword [handle]
-			call 	_ReadConsoleA
-
-		;print results
-		push	inputBuffer			;eax = stof(inputBuffer)
-		call 	stof				;^
-		push	eax					;^
-		push	inputBuffer			;text inputted
-		push	dword [charsRead]	;length of input (plus CRLF)
-		push	inputResult
-		call	printf
 
 		;exit
 		call 	exit

@@ -9,6 +9,8 @@ global LinkedListGetData
 global LinkedListSetData
 global LinkedListDeconstruct
 
+global LinkedListElementPrintString
+
 ;main.asm
 extern heapHandle
 
@@ -44,6 +46,8 @@ section .data
     listPrefix: db "(%i) [", 0
     elementSeperator: db ", ", 0
     listSuffix: db "]", 0xa, 0
+
+    LinkedListElementPrintString: db "%i", 0
 
 section .text
     ;constructs a linked list and returns it (heap allocation)
@@ -227,7 +231,6 @@ section .text
             ;printf("[]\n");
             push    emptyMessage
             call    printf
-            pop     eax
 
             ;return
                 ;delete currentNode; (from the stack)
@@ -249,18 +252,16 @@ section .text
         push    listPrefix
         call    printf
         pop     eax
-        pop     eax
 
         ;while(true)
         llloop1:
-            ;printf("%i", currentNode.data)
+            ;printf(LinkedListElementPrintString, currentNode.data)
             mov     eax, dword [esp+0]  ;&currentNode
             add     eax, 0              ;&currentNode.data
             mov     eax, [eax]          ;currentNode.data
             push    eax
-            push    intprintf
+            push    LinkedListElementPrintString
             call    printf
-            pop     eax
             pop     eax
 
             ;currentNode = currentNode.next
@@ -276,7 +277,6 @@ section .text
                 ;printf("]")
                 push    listSuffix
                 call    printf
-                pop     eax
 
                 ;break;
                 jmp     llbreak1
@@ -285,7 +285,6 @@ section .text
 
             push    elementSeperator
             call    printf
-            pop     eax
 
 
             llcontinue1:
@@ -342,7 +341,6 @@ section .text
                 push    dword [esp+4+8+8]    ;index (4 for local variables, 8 for register preservation, 8 for arg location)
                 push    outOfBoundsMessage
                 call    printf
-                pop     eax
                 pop     eax
 
                 ;break;

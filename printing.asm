@@ -731,7 +731,7 @@ section .text
 
 		;TODO: delete args
 
-        ret 
+        ret 	4
 
 	;bool isNumber(char input)
 	isNumber:
