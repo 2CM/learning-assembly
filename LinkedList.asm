@@ -426,6 +426,24 @@ section .text
 
             ret     12
 
+    ;pops last element and returns it
+    ;int32_t LinkedListPop(LinkedList* list)
+    LinkedListPop:
+
+
+
+    ;pops firsst element and returns it
+    ;int32_t LinkedListShift(LinkedList* list)
+    LinkedListShift:
+
+
+
+    ;deletes an element from a linked list and returns it
+    ;int32_t LinkedListDelete(LinkedList* list, int32_t index)
+    LinkedListDelete:
+
+
+
     ;deconstructs a linked list
     ;void LinkedListDeconstruct(LinkedList* list)
     LinkedListDeconstruct:
@@ -443,6 +461,15 @@ section .text
 
         ;while(true)
         llloop3:
+            llif7: ;if(currentNode == nullptr)
+                cmp     dword [esp+4], nullptr
+                jne     llelse7
+
+                ;break;
+                jmp     llbreak3
+
+            llelse7:
+
             ;nextNode = currentNode.next;
             mov     eax, dword [esp+4]      ;&currentNode
             add     eax, 4                  ;&currentNode.next
@@ -461,15 +488,6 @@ section .text
             ;currentNode = nextNode;
             mov     eax, dword [esp+0]      ;nextNode
             mov     dword [esp+4], eax      ;currentNode
-
-            llif7: ;if(currentNode == nullptr)
-                cmp     dword [esp+4], nullptr
-                jne     llelse7
-
-                ;break;
-                jmp     llbreak3
-
-            llelse7:
 
             llcontinue3:
                 jmp     llloop3
