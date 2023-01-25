@@ -46,10 +46,10 @@ section .data
     listPrefix: db "(%i) [", 0
     elementSeperator: db ", ", 0
     listSuffix: db "]", 0xa, 0
-
     LinkedListElementPrintString: db "%i", 0
 
 section .text
+;#region Construction
     ;constructs a linked list and returns it (heap allocation)
     ;LinkedList* LinkedListConstruct()
     LinkedListConstruct:
@@ -75,138 +75,140 @@ section .text
 
         ret
 
-    ;pushes an element to a linked list
-    ;void LinkedListPush(LinkedList* list, int32_t data)
-    LinkedListPush:
+    
+;#endregion Construction
+
+
+;#region Getting
+    ;gets the node at an index and returns nullptr if its out of bounds
+    ;LinkedListNode* LinkedListGetNode(LinkedList* list, int32_t index)
+    LinkedListGetNode:
         ;register preservation
-        push    eax
         push    ebx
         push    ecx
 
-        ;LinkedListNode* newNode;
+        ;LinkedListNode* currentNode;
         push    nullptr
 
-        ;LinkedListNode* currentLastNode;
-        push    nullptr
+        ;currentNode = list.first;
+        mov     eax, dword [esp+4+8+4]      ;&list (4 for local variables, 8 for register preservation, 4 for arg location)
+        add     eax, 0                      ;&list.first
+        mov     eax, [eax]                  ;list.first
+        mov     dword [esp+0], eax
 
-        ;heapHandle = GetProcessHeap()
-        call    _GetProcessHeap
-        mov     [heapHandle], eax
 
-        ;newNode = HeapAlloc(heapHandle, 8, sizeof(LinkedListNode))
-        push    dword 8                 ;sizeof(LinkedListNode)
-        push    dword 8                 ;initialize to 0
-        push    dword [heapHandle]      ;handle
-        call    _HeapAlloc
-        mov     dword [eax+0], 7
-        mov     dword [eax+4], 0
-        mov     dword [esp+4], eax
+        ;i = 0;
+        mov     ebx, 0
 
-        ;newNode.data = data
-        mov     eax, dword [esp+4]      ;&newNode
-        add     eax, 0                  ;&newNode.data
-        mov     ecx, dword [esp+8+12+8] ;data (8 for local variables, 12 for register preservation, 8 for arg location)
-        mov     [eax], ecx
+        llloop2:
+            cmp		ebx, dword [esp+4+8+8]  ;index (4 for local variables, 8 for register preservation, 8 for arg location)
+            jge		llbreak2
 
-        ;newNode.next = nullptr
-        mov     eax, dword [esp+4]      ;&newNode
-        add     eax, 4                  ;&newNode.next
-        mov     dword [eax], nullptr    ;nullptr
+            ;currentNode = currentNode.next
+            mov     eax, dword [esp+0]  ;&currentNode
+            add     eax, 4              ;&currentNode.next
+            mov     eax, [eax]          ;currentNode.next
+            mov     dword [esp+0], eax
 
-        ;list.length = list.length + 1;
-        mov     eax, dword [esp+8+12+4] ;&list (8 for local variables, 12 for register preservation, 8 for arg location)
-        add     eax, 8                  ;&list.length
-        mov     ecx, [eax]              ;ecx = list.length
-        inc     ecx                     ;ecx++;
-        mov     [eax], ecx              ;*eax = ecx
+            llif4:  ;if(currentNode == nullptr)
+                cmp     dword [esp+0], nullptr 
+                jne     llelse4
 
-        llif0:  ;if(list.first == nullptr)
-            mov     eax, dword [esp+8+12+4]  ;list (8 for local variables, 12 for register preservation, 8 for arg location)
-            add     eax, 0                   ;list.first
-            mov     ecx, [eax]
-            cmp     ecx, nullptr
-            jne     llelse0
-
-            mov     eax, eax
-
-            ;list.first = newNode;
-            mov     eax, dword [esp+8+12+4] ;&list (8 for local variables, 12 for register preservation, 4 for arg location)
-            add     eax, 0                  ;&list.first
-            mov     ecx, dword [esp+4]      ;newNode
-            mov     [eax], ecx
-
-            ;list.last = newNode;
-            mov     eax, dword [esp+8+12+4] ;&list (8 for local variables, 12 for register preservation, 4 for arg location)
-            add     eax, 4                  ;&list.last
-            mov     ecx, dword [esp+4]      ;newNode
-            mov     [eax], ecx
-
-            ;return
-                ;delete currentLastNode; (from the stack)
-                pop     ecx
-
-                ;delete newNode; (from the stack)
-                pop     ecx
-
-                ;register preservation
-                pop     ecx
-                pop     ebx
+                ;printf("ERROR: %i is out of bounds", index)
+                push    dword [esp+4+8+8]    ;index (4 for local variables, 8 for register preservation, 8 for arg location)
+                push    outOfBoundsMessage
+                call    printf
                 pop     eax
 
-                ret     8
+                ;break;
+                jmp     llbreak2
 
-        llelse0:
+            llelse4:
+
+            llcontinue2:
+                ;i++
+                inc     ebx
+
+                jmp     llloop2
+
+            llbreak2:
 
 
-        ;currentLastNode = list->last
-        mov     eax, dword [esp+8+12+4] ;&list (8 for local variables, 12 for register preservation, 4 for arg location)
-        add     eax, 4                  ;&list.last
-        mov     eax, [eax]              ;list.last
-        mov     dword [esp+0], eax      ;currentLastNode
-
-        llif1:  ;if(currentLastNode == nullptr)
-            cmp     dword [esp+4], nullptr
-            jne     llelse1
-
-            ;currentLastNode = list->first
-            mov     eax, dword [esp+8+12+4] ;&list (8 for local variables, 12 for register preservation, 4 for arg location)
-            add     eax, 0                  ;&list.first
-            mov     eax, [eax]              ;list.first
-            mov     dword [esp+0], eax      ;currentLastNode
-
-        llelse1:
-
-        ;currentLastNode->next = newNode;
-        mov     eax, dword [esp+0]      ;&currentLastNode
-        add     eax, 4                  ;&currentLastNode.next
-        mov     ecx, dword [esp+4]      ;newNode
-        mov     [eax], ecx
-
-        ;list.last = newNode;
-        mov     eax, dword [esp+8+12+4] ;&list (8 for local variables, 12 for register preservation, 4 for arg location)
-        add     eax, 4                  ;&list.last
-        mov     ecx, dword [esp+4]      ;newNode
-        mov     [eax], ecx
-
-        ;return
-            ;delete currentLastNode; (from the stack)
-            pop     eax
-
-            ;delete newNode; (from the stack)
+        ;return currentNode
+            ;eax = currentNode; delete currentNode; (from the stack)
             pop     eax
 
             ;register preservation
+            pop    ecx
+            pop    ebx
+            
+            ret     8
+
+    ;gets the data at an index
+    ;int32_t LinkedListGetData(LinkedList* list, int32_t index)
+    LinkedListGetData:
+        ;LinkedListNode* node (eax) = LinkedListGetNode(list, index);
+        push    dword [esp+8]       ;index
+        push    dword [esp+4+4]     ;list (4 because arg before it)
+        call    LinkedListGetNode
+
+        llif5:  ;if(node == nullptr)
+            cmp     eax, nullptr
+            jne     llelse5
+
+            ;return 0
+                mov     eax, 0
+                ret     8
+            
+        llelse5:
+
+        ;return node.data
+        mov     eax, [eax]  ;node.data
+
+        ret     8
+;#endregion Getting
+
+;#region Setting 
+    ;sets the data at an index
+    ;void LinkedListSetData(LinkedList* list, int32_t index, int32_t data)
+    LinkedListSetData:
+        ;register preservation
+        push    eax
+        push    ecx
+
+        ;LinkedListNode* node (eax) = LinkedListGetNode(list, index);
+        push    dword [esp+8+8]       ;index (8 for register preservation)
+        push    dword [esp+8+4+4]     ;list (8 for register preservation, 4 because arg before it)
+        call    LinkedListGetNode
+
+        llif6:  ;if(value == nullptr)
+            cmp     eax, nullptr
+            jne     llelse6
+
+            ;return 0
+                ;register preservation
+                pop     ecx
+                pop     eax
+
+                ret     12
+            
+        llelse6:
+
+        ;value.data = data
+        mov     ecx, dword [esp+8+12]   ;data (8 for register preservation, 12 for arg location)
+        mov     [eax], ecx
+
+        ;return 0
+            ;register preservation
             pop     ecx
-            pop     ebx
             pop     eax
 
-            ret     8
-    
-    
-    ;pushes an element to a linked list
-    ;void LinkedListPushBack(LinkedList* list, int32_t data)
-    LinkedListPushBack:
+            ret     12
 
+;#endregion Setting
+
+
+;#region Printing
     ;prints a linked list in javascript array form. "(5) [1, 2, 3, 4, 5]" | "[]"
     ;void LinkedListPrint(LinkedList* list)
     LinkedListPrint:
@@ -301,149 +303,42 @@ section .text
         pop     ebx
         pop     eax
 
-        ret     4
-
-    ;gets the node at an index and returns nullptr if its out of bounds
-    ;LinkedListNode* LinkedListGetNode(LinkedList* list, int32_t index)
-    LinkedListGetNode:
-        ;register preservation
-        push    ebx
-        push    ecx
-
-        ;LinkedListNode* currentNode;
-        push    nullptr
-
-        ;currentNode = list.first;
-        mov     eax, dword [esp+4+8+4]      ;&list (4 for local variables, 8 for register preservation, 4 for arg location)
-        add     eax, 0                      ;&list.first
-        mov     eax, [eax]                  ;list.first
-        mov     dword [esp+0], eax
+        ret     4    
+;#endregion Printing
 
 
-        ;i = 0;
-        mov     ebx, 0
+;#region Insertion
+    ;inserts an element into a linked list at a position
+    ;void LinkedListInsert(LinkedList* list, int32_t index, int32_t data)
+    LinkedListInsert:
+    
+    ;pushes an element to the end of a linked list
+    ;void LinkedListPush(LinkedList* list, int32_t data)
+    LinkedListPush:
+    
+    ;pushes an element to the beginning of a linked list
+    ;void LinkedListUnshift(LinkedList* list, int32_t data)
+    LinkedListUnshift:
+;#region Insertion
 
-        llloop2:
-            cmp		ebx, dword [esp+4+8+8]  ;index (4 for local variables, 8 for register preservation, 8 for arg location)
-            jge		llbreak2
-
-            ;currentNode = currentNode.next
-            mov     eax, dword [esp+0]  ;&currentNode
-            add     eax, 4              ;&currentNode.next
-            mov     eax, [eax]          ;currentNode.next
-            mov     dword [esp+0], eax
-
-            llif4:  ;if(currentNode == nullptr)
-                cmp     dword [esp+0], nullptr 
-                jne     llelse4
-
-                ;printf("ERROR: %i is out of bounds", index)
-                push    dword [esp+4+8+8]    ;index (4 for local variables, 8 for register preservation, 8 for arg location)
-                push    outOfBoundsMessage
-                call    printf
-                pop     eax
-
-                ;break;
-                jmp     llbreak2
-
-            llelse4:
-
-            llcontinue2:
-                ;i++
-                inc     ebx
-
-                jmp     llloop2
-
-            llbreak2:
-
-
-        ;return currentNode
-            ;eax = currentNode; delete currentNode; (from the stack)
-            pop     eax
-
-            ;register preservation
-            pop    ecx
-            pop    ebx
-            
-            ret     8
-
-    ;gets the data at an index
-    ;int32_t LinkedListGetData(LinkedList* list, int32_t index)
-    LinkedListGetData:
-        ;LinkedListNode* node (eax) = LinkedListGetNode(list, index);
-        push    dword [esp+8]       ;index
-        push    dword [esp+4+4]     ;list (4 because arg before it)
-        call    LinkedListGetNode
-
-        llif5:  ;if(node == nullptr)
-            cmp     eax, nullptr
-            jne     llelse5
-
-            ;return 0
-                mov     eax, 0
-                ret     8
-            
-        llelse5:
-
-        ;return node.data
-        mov     eax, [eax]  ;node.data
-
-        ret     8
-
-    ;sets the data at an index
-    ;void LinkedListSetData(LinkedList* list, int32_t index, int32_t data)
-    LinkedListSetData:
-        ;register preservation
-        push    eax
-        push    ecx
-
-        ;LinkedListNode* node (eax) = LinkedListGetNode(list, index);
-        push    dword [esp+8+8]       ;index (8 for register preservation)
-        push    dword [esp+8+4+4]     ;list (8 for register preservation, 4 because arg before it)
-        call    LinkedListGetNode
-
-        llif6:  ;if(value == nullptr)
-            cmp     eax, nullptr
-            jne     llelse6
-
-            ;return 0
-                ;register preservation
-                pop     ecx
-                pop     eax
-
-                ret     12
-            
-        llelse6:
-
-        ;value.data = data
-        mov     ecx, dword [esp+8+12]   ;data (8 for register preservation, 12 for arg location)
-        mov     [eax], ecx
-
-        ;return 0
-            ;register preservation
-            pop     ecx
-            pop     eax
-
-            ret     12
-
-    ;pops last element and returns it
-    ;int32_t LinkedListPop(LinkedList* list)
-    LinkedListPop:
-
-
-
-    ;pops firsst element and returns it
-    ;int32_t LinkedListShift(LinkedList* list)
-    LinkedListShift:
-
-
+;#region Deletion
 
     ;deletes an element from a linked list and returns it
     ;int32_t LinkedListDelete(LinkedList* list, int32_t index)
     LinkedListDelete:
 
 
+    ;deletes the last element from a linked list and returns it
+    ;int32_t LinkedListPop(LinkedList* list)
+    LinkedListPop:
 
+    ;deletes the first element from a linked list and returns it
+    ;int32_t LinkedListShift(LinkedList* list)
+    LinkedListShift:
+;#endregion Deletion
+
+
+;#region Deconstruction
     ;deconstructs a linked list
     ;void LinkedListDeconstruct(LinkedList* list)
     LinkedListDeconstruct:
@@ -513,3 +408,4 @@ section .text
             pop     eax
 
             ret     4
+;#endregion Deconstruction
